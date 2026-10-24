@@ -1,0 +1,44 @@
+name: Build QuickUse Mod
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Extract source ZIP
+        run: |
+          unzip -q QuickUse12111-source.zip -d source
+          find source -name gradlew -type f
+
+      - name: Build mod
+        run: |
+          WRAPPER=$(find source -name gradlew -type f | head -n 1)
+          if [ -z "$WRAPPER" ]; then
+            echo "ERROR: No Gradle wrapper found in ZIP"
+            exit 1
+          fi
+          cd "$(dirname "$WRAPPER")"
+          chmod +x gradlew
+          ./gradlew build
+
+      - name: Upload built JAR files
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickUse-JAR
+          path: source/**/build/libs/*.jar
+          if-no-files-found: error
